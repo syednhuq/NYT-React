@@ -1,30 +1,65 @@
-// EXPRESS
+// @author: Thomas Thompson
+// @github: tomtom28
+// @comment: HW for Week 19 - NY Time Article Search with ReactJS! Whoo!
+
+
+// Require Node Modules
 var express = require('express');
+var bodyParser = require('body-parser');
+var mongoose = require('mongoose');
+var logger = require('morgan'); // for debugging
+
+
+
+// Initialize Express for debugging & body parsing
 var app = express();
-var PORT = process.env.PORT || 8080
+app.use(logger('dev'));
+app.use(bodyParser.urlencoded({
+  extended: false
+}));
 
 
-var theAPIs = require('./routes/api_routes')
-
-// ...
-
-app.use('/api/saved', theAPIs)
+// Serve Static Content
+app.use(express.static(process.cwd() + '/public'));
 
 
-app.get('/', function(req, res) {
-    res.send('NYT React Search SUCKS!')
-})
-app.get('/api/articles', function(req, res) {
-    res.send('articles will go here.')
-})
 
-// Send every request to the React app
-// Define any API routes before this runs
-app.get("*", function(req, res) {
-    res.sendFile(path.join(__dirname, "./client/build/index.html"));
-  });
+// Database Configuration with Mongoose
+// ---------------------------------------------------------------------------------------------------------------
+// Connect to localhost if not a production environment
+if(process.env.NODE_ENV == 'production'){
+  // Gotten using `heroku config | grep MONGODB_URI` command in Command Line
+  mongoose.connect('mongodb://heroku_ft2zhzhb:fg9sh90a81foks11qgs511577t@ds157097.mlab.com:57097/heroku_ft2zhzhb');
+}
+else{
+  mongoose.connect('mongodb://localhost/nytreact');
+}
+var db = mongoose.connection;
 
-app.listen(PORT, function() {
-    console.log(`listening on port: ${PORT}`)
+// Show any Mongoose errors
+db.on('error', function(err) {
+  console.log('Mongoose Error: ', err);
 });
 
+// Once logged in to the db through mongoose, log a success message
+db.once('open', function() {
+  console.log('Mongoose connection successful.');
+});
+
+// Import the Article model
+var Article = require('./models/Article.js');
+// ---------------------------------------------------------------------------------------------------------------
+
+
+
+// Import Routes/Controller
+var router = require('./controllers/controller.js');
+app.use('/', router);
+
+
+
+// Launch App
+var port = process.env.PORT || 3000;
+app.listen(port, function(){
+  console.log('Running on port: ' + port);
+});
